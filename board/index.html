@@ -1,0 +1,1054 @@
+<title>Release Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&display=swap">
+
+<style>
+  :root {
+    --ground: #F6F7F9;
+    --surface: #FFFFFF;
+    --sunk: #EDEFF3;
+    --ink: #12151C;
+    --ink-2: #3D4453;
+    --slate: #6E7688;
+    --line: #DFE3EA;
+    --line-2: #C9CFDA;
+    --left: #C93B41;
+    --left-soft: rgba(201, 59, 65, 0.09);
+    --right: #1F8797;
+    --right-soft: rgba(31, 135, 151, 0.09);
+    --amber: #9A6E22;
+    --amber-soft: rgba(154, 110, 34, 0.11);
+    --shadow: 0 1px 2px rgba(18, 21, 28, .05), 0 6px 16px -10px rgba(18, 21, 28, .18);
+    --ui: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --voice: "Newsreader", Georgia, "Times New Roman", serif;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0C0E13;
+      --surface: #161A22;
+      --sunk: #10131A;
+      --ink: #E7EAF1;
+      --ink-2: #AEB6C6;
+      --slate: #838C9E;
+      --line: #262C38;
+      --line-2: #39414F;
+      --left: #E86A6E;
+      --left-soft: rgba(232, 106, 110, 0.13);
+      --right: #4FBCCC;
+      --right-soft: rgba(79, 188, 204, 0.13);
+      --amber: #D9A44E;
+      --amber-soft: rgba(217, 164, 78, 0.13);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0C0E13;
+    --surface: #161A22;
+    --sunk: #10131A;
+    --ink: #E7EAF1;
+    --ink-2: #AEB6C6;
+    --slate: #838C9E;
+    --line: #262C38;
+    --line-2: #39414F;
+    --left: #E86A6E;
+    --left-soft: rgba(232, 106, 110, 0.13);
+    --right: #4FBCCC;
+    --right-soft: rgba(79, 188, 204, 0.13);
+    --amber: #D9A44E;
+    --amber-soft: rgba(217, 164, 78, 0.13);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-inline: 18px;
+    padding-block: 26px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--right); outline-offset: 2px; border-radius: 4px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+
+  .masthead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .masthead h1 { font-size: 17px; letter-spacing: -.01em; }
+  .masthead .since { font-size: 12px; color: var(--slate); }
+
+  .doors-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
+  .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+  @media (max-width: 520px) { .doors { grid-template-columns: 1fr; } }
+
+  .door {
+    position: relative;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+    border-radius: var(--r);
+    padding: 14px 15px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 150px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s;
+  }
+  @media (prefers-reduced-motion: reduce) { .door { transition: none; } }
+  .door--prompt { border-left-color: var(--left); }
+  .door--question { border-left-color: var(--right); }
+  .door--prompt .eyebrow { color: var(--left); }
+  .door--question .eyebrow { color: var(--right); }
+  .door:hover { border-color: var(--line-2); }
+  .door--prompt:hover { border-left-color: var(--left); }
+  .door--question:hover { border-left-color: var(--right); }
+  .door--prompt[aria-pressed="true"] { background: var(--left-soft); }
+  .door--question[aria-pressed="true"] { background: var(--right-soft); }
+
+  .door-body { font-size: 16.5px; line-height: 1.33; letter-spacing: -.005em; flex: 1; }
+  .door--question .door-body {
+    font-family: var(--voice);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 1.32;
+  }
+  .door--question .door-body.is-generated {
+    font-family: var(--ui);
+    font-style: normal;
+    font-size: 15px;
+    color: var(--ink-2);
+  }
+  .door-foot { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11.5px; color: var(--slate); }
+
+  .tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line-2);
+    color: var(--slate);
+    white-space: nowrap;
+  }
+  .tag--yours { border-color: var(--right); color: var(--right); }
+
+  .doors-actions { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .btn:hover { border-color: var(--line-2); color: var(--ink); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn--ghost { background: transparent; }
+
+  .away {
+    border: 1px solid var(--amber);
+    background: var(--amber-soft);
+    border-radius: var(--r);
+    padding: 12px 14px;
+    margin-bottom: 13px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
+  .sec-head h2 { margin: 0; font-size: 12.5px; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; }
+
+  .projects { display: flex; flex-direction: column; gap: 11px; }
+  .proj {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 13px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .proj-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .proj-name { font-size: 15px; font-weight: 600; letter-spacing: -.005em; }
+  .proj-sub { font-size: 11.5px; color: var(--slate); margin-top: 1px; }
+  .pill {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    border: 1px solid var(--line-2);
+    color: var(--slate);
+  }
+  .pill--wait { border-color: var(--amber); background: var(--amber-soft); color: var(--amber); }
+  .pill--mine { border-color: var(--line-2); color: var(--ink-2); }
+
+  .steps { display: flex; align-items: center; flex-wrap: wrap; row-gap: 2px; }
+  .step { background: none; border: 0; padding: 3px 0; display: flex; align-items: center; font-size: 11px; color: var(--slate); }
+  .step-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--line-2); background: transparent; flex: none; }
+  .step.done .step-dot { background: var(--line-2); border-color: var(--line-2); }
+  .step.now .step-dot { background: var(--ink); border-color: var(--ink); }
+  .step-label { padding: 0 6px 0 5px; white-space: nowrap; }
+  .step.now .step-label { color: var(--ink); font-weight: 600; }
+  .step-bar { width: 10px; height: 1.5px; background: var(--line); flex: none; }
+  .step:hover .step-label { color: var(--ink); }
+
+  .next-line { font-size: 13.5px; color: var(--ink-2); }
+  .next-line b { color: var(--ink); font-weight: 600; }
+
+  .songs { display: flex; flex-direction: column; border-top: 1px solid var(--line); margin-top: 2px; }
+  .song { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .song:last-child { border-bottom: 0; padding-bottom: 2px; }
+  .song-n { font-size: 11px; color: var(--slate); width: 14px; flex: none; }
+  .song-main { flex: 1; min-width: 0; }
+  .song-title { font-size: 13.5px; font-weight: 500; }
+  .song-credit { font-size: 11px; color: var(--slate); }
+  .song-open { font-size: 11px; color: var(--amber); margin-top: 2px; }
+  .song-stage {
+    font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; white-space: nowrap; flex: none;
+  }
+  .song-stage:hover { border-color: var(--ink-2); }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--slate); }
+  .chip[aria-pressed="true"] { border-color: var(--ink-2); color: var(--ink); font-weight: 600; }
+  .qlist { display: flex; flex-direction: column; gap: 9px; }
+  .qitem { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 11px 13px; display: flex; flex-direction: column; gap: 8px; }
+  .qtext { font-family: var(--voice); font-size: 16px; line-height: 1.35; }
+  .qitem.is-generated .qtext { font-family: var(--ui); font-size: 14px; color: var(--ink-2); }
+  .qmeta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .qmeta .who { font-size: 11px; color: var(--slate); }
+  .qacts { display: flex; gap: 6px; margin-left: auto; }
+  .mini { font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2); }
+  .mini--place:hover { border-color: var(--right); color: var(--right); }
+  .mini--kill:hover { border-color: var(--left); color: var(--left); }
+  .empty { font-size: 13px; color: var(--slate); padding: 4px 0; }
+
+  .logbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 13px 15px; display: flex; flex-direction: column; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 10.5px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: var(--slate); }
+  .field input, .field textarea {
+    font: inherit; font-size: 14px; color: var(--ink);
+    background: var(--sunk); border: 1px solid var(--line); border-radius: 7px;
+    padding: 8px 10px; width: 100%; resize: vertical;
+  }
+  .field input::placeholder, .field textarea::placeholder { color: var(--slate); opacity: .8; }
+  .log-row { display: grid; grid-template-columns: 1fr 108px; gap: 10px; }
+  @media (max-width: 460px) { .log-row { grid-template-columns: 1fr; } }
+  .log-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .saved-note { font-size: 11.5px; color: var(--slate); }
+
+  details.parked { border-top: 1px solid var(--line); padding-top: 12px; }
+  details.parked summary { font-size: 12.5px; color: var(--slate); cursor: pointer; list-style: none; }
+  details.parked summary::-webkit-details-marker { display: none; }
+  details.parked summary::before { content: "+ "; }
+  details.parked[open] summary::before { content: "\2013 "; }
+  .parked-list { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+  .parked-item { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 10px; }
+  .parked-item span:last-child { color: var(--slate); font-size: 11.5px; text-align: right; }
+
+  footer { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .foot-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .foot-note { font-size: 11px; color: var(--slate); line-height: 1.45; }
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px;
+    background: var(--ink); color: var(--ground);
+    padding: 9px 15px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow); z-index: 20; max-width: calc(100vw - 36px);
+  }
+  .skel { color: var(--slate); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <h1>Release Board</h1>
+    <div class="since num" id="since"></div>
+  </div>
+
+  <section aria-labelledby="doors-h">
+    <div id="away-slot"></div>
+    <div class="doors-head">
+      <h2 id="doors-h" class="eyebrow">Pick a door</h2>
+      <span class="eyebrow" id="doors-state"></span>
+    </div>
+    <div class="doors" id="doors">
+      <div class="door door--prompt"><div class="skel">Loading your board&hellip;</div></div>
+      <div class="door door--question"><div class="skel">&nbsp;</div></div>
+    </div>
+    <div class="doors-actions">
+      <button class="btn" id="btn-two-more">Two more</button>
+      <button class="btn btn--ghost" id="btn-keep-q">Keep this question</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="flight-h">
+    <div class="sec-head"><h2 id="flight-h">In flight</h2></div>
+    <div class="projects" id="projects"><div class="skel">&hellip;</div></div>
+  </section>
+
+  <section aria-labelledby="queue-h">
+    <div class="sec-head">
+      <h2 id="queue-h">Written, not placed</h2>
+      <span class="eyebrow num" id="queue-count"></span>
+    </div>
+    <div class="chips" id="queue-chips"></div>
+    <div class="qlist" id="queue"></div>
+  </section>
+
+  <section aria-labelledby="log-h">
+    <div class="sec-head"><h2 id="log-h">Tonight</h2></div>
+    <div class="logbox">
+      <div class="field">
+        <label for="log-done">What got done</label>
+        <textarea id="log-done" rows="2" placeholder="One line is enough."></textarea>
+      </div>
+      <div class="log-row">
+        <div class="field">
+          <label for="log-way">What was in the way</label>
+          <input id="log-way" type="text" placeholder="Or leave it blank.">
+        </div>
+        <div class="field">
+          <label for="log-min">Minutes</label>
+          <input id="log-min" type="number" inputmode="numeric" min="0" step="5" placeholder="45">
+        </div>
+      </div>
+      <div class="log-foot">
+        <button class="btn" id="btn-log">Save tonight</button>
+        <span class="saved-note" id="log-note"></span>
+      </div>
+    </div>
+  </section>
+
+  <details class="parked">
+    <summary>Parked</summary>
+    <div class="parked-list" id="parked"></div>
+  </details>
+
+  <footer>
+    <div class="foot-acts">
+      <button class="btn" id="btn-mem">Save to Mem</button>
+      <button class="btn" id="btn-export">Export</button>
+    </div>
+    <div class="foot-note" id="foot-note"></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MEM_SERVER = "Mem";
+  var MEM_NOTE_ID = "0d3602c2-7df2-50e0-8165-1149175ddec4";
+  var LS_KEY = "releaseboard.snapshot.v1";
+
+  var DAY = 86400000;
+
+  // Last-resort questions, used only if both the store and Claude are unreachable.
+  var EMERGENCY_QUESTIONS = [
+    "Does Luc find out he's being harvested, or only the audience?",
+    "What does PB2 actually want?",
+    "Is the voice memo still running when he puts the machine on?"
+  ];
+
+  var state = {
+    projects: [], songs: [], queue: [], questions: [],
+    board: null, doors: null, todayLog: null,
+    ready: false, dbUp: null
+  };
+  var caps = { db: null, sample: null, downloads: null, mcp: null };
+  var filter = "all";
+  var showAll = false;
+  var picked = null;
+  var busy = false;
+
+  /* ---------- helpers ---------- */
+
+  function $(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function daysBetween(iso) {
+    if (!iso) return null;
+    var t = Date.parse(iso);
+    if (isNaN(t)) return null;
+    return Math.floor((Date.now() - t) / DAY);
+  }
+
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+
+  function toast(msg) {
+    var old = document.querySelector(".toast");
+    if (old) old.remove();
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.setAttribute("role", "status");
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 3200);
+  }
+
+  function readCache() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) { return null; }
+  }
+
+  function writeCache() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        projects: state.projects, songs: state.songs, queue: state.queue,
+        questions: state.questions, board: state.board, doors: state.doors
+      }));
+    } catch (e) { /* private mode, blocked storage: not fatal */ }
+  }
+
+  function byOrder(a, b) { return (a.order == null ? 99 : a.order) - (b.order == null ? 99 : b.order); }
+
+  function isTyped(x) { return !x || x.provenance !== "generated"; }
+
+  /* ---------- persistence ---------- */
+
+  function put(path, body) {
+    writeCache();
+    if (!caps.db) return Promise.resolve(false);
+    return caps.db.doc(path).set(body).then(function () { return true; }, function (e) {
+      toast(e && e.code === "revoked" ? "Lost access to your board." : "That didn't save. Try again.");
+      return false;
+    });
+  }
+
+  function touch() {
+    var b = state.board || {};
+    b.lastTouchedAt = new Date().toISOString();
+    state.board = b;
+    renderSince();
+    put("meta/board", b);
+  }
+
+  /* ---------- doors ---------- */
+
+  function leadProject() {
+    var live = state.projects.filter(function (p) { return !p.parked; }).sort(byOrder);
+    var mine = live.filter(function (p) { return !p.blockedOn; });
+    return (mine[0] || live[0] || null);
+  }
+
+  function unusedTypedQuestion() {
+    var pool = state.questions.filter(function (q) { return isTyped(q) && !q.usedAt; });
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function buildDoorsFromHisOwn(small) {
+    var p = leadProject();
+    var q = unusedTypedQuestion();
+    var prompt, promptWhere, minutes;
+
+    if (p && p.nextAction) {
+      prompt = p.nextAction;
+      promptWhere = p.title;
+      minutes = small ? 10 : (p.nextActionMinutes || 45);
+    } else if (p) {
+      prompt = "Set the next move on " + p.title + ".";
+      promptWhere = p.title;
+      minutes = 10;
+    } else {
+      prompt = "Add a project to the board.";
+      promptWhere = "";
+      minutes = 5;
+    }
+
+    return {
+      prompt: prompt,
+      promptWhere: promptWhere,
+      promptMinutes: minutes,
+      promptSource: p && p.nextAction ? "typed" : "generated",
+      question: q ? q.text : (EMERGENCY_QUESTIONS[Math.floor(Math.random() * EMERGENCY_QUESTIONS.length)]),
+      questionSource: q ? "typed" : "generated",
+      questionId: q ? q.id : null,
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  function contextForClaude() {
+    var lines = [];
+    state.projects.filter(function (p) { return !p.parked; }).sort(byOrder).forEach(function (p) {
+      var stage = (p.stages && p.stages[p.stageIndex]) || "";
+      var block = p.blockedOn ? (" — waiting on " + p.blockedOn.who + " (" + p.blockedOn.what + ")") : "";
+      lines.push("- " + p.title + " [" + p.role + "] stage: " + stage + block + (p.nextAction ? " — next: " + p.nextAction : ""));
+    });
+    var mine = state.queue.filter(function (q) { return q.status === "queued" && isTyped(q); }).slice(0, 14);
+    if (mine.length) {
+      lines.push("");
+      lines.push("Written but not yet placed (HIS OWN WORDS, verbatim):");
+      mine.forEach(function (q) { lines.push('- "' + q.text + '"'); });
+    }
+    return lines.join("\n");
+  }
+
+  function generateDoors(small) {
+    if (!caps.sample) { toast("Claude isn't available here right now."); return Promise.resolve(null); }
+    var box = small ? 10 : 45;
+    var input =
+      "You are helping Alexandre (AyeleeX) start writing this morning. He is a screenwriter and music producer.\n\n" +
+      "HIS BOARD RIGHT NOW:\n" + contextForClaude() + "\n\n" +
+      "Give him two things.\n\n" +
+      "1. prompt — the smallest concrete next thing to write or produce, on the project closest to done that is not waiting on someone else. Name the specific scene, line, or song. Around " + box + " minutes of work. One sentence, imperative.\n" +
+      "2. question — ONE open question that makes him want to write. It must be anchored in what he has actually written above, in his register: spare, interior, specific. Never a craft-book prompt. Never 'explore the theme of'. Never pitch language. No options, no lists. The kind of question only his story could answer.\n\n" +
+      "Also return project (the project title the prompt belongs to) and minutes (a number).\n" +
+      'Reply with JSON only: {"prompt":"...","project":"...","minutes":30,"question":"..."}';
+
+    return caps.sample.json(input, { modelTier: "default", cache: false }).then(function (r) {
+      if (!r || !r.prompt || !r.question) return null;
+      return {
+        prompt: String(r.prompt),
+        promptWhere: String(r.project || ""),
+        promptMinutes: Number(r.minutes) || box,
+        promptSource: "generated",
+        question: String(r.question),
+        questionSource: "generated",
+        questionId: null,
+        generatedAt: new Date().toISOString()
+      };
+    }, function (e) {
+      var code = e && e.code;
+      if (code === "not_granted" || code === "capability_disabled" || code === "capability_removed") {
+        caps.sample = null;
+      } else if (code === "rate_limited") {
+        toast("Too many requests just now. Give it a minute.");
+      } else {
+        toast("Couldn't reach Claude. Your own material is still here.");
+      }
+      return null;
+    });
+  }
+
+  function setDoors(d) {
+    if (!d) return;
+    state.doors = d;
+    picked = null;
+    renderDoors();
+    put("meta/doors", d);
+  }
+
+  /* ---------- render ---------- */
+
+  function renderSince() {
+    var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
+    var el = $("since");
+    if (away == null) { el.textContent = ""; return; }
+    el.textContent = away === 0 ? "Here today" : "Last here " + plural(away, "day", "days") + " ago";
+
+    var slot = $("away-slot");
+    if (away >= 7) {
+      var lead = leadProject();
+      slot.innerHTML = '<div class="away">You were last here <b>' + away + ' days</b> ago' +
+        (lead ? ', in the middle of <b>' + esc(lead.title) + '</b>' : '') +
+        '. Start small — the prompt below is a ten-minute version.</div>';
+    } else {
+      slot.innerHTML = "";
+    }
+  }
+
+  function renderDoors() {
+    var d = state.doors;
+    var host = $("doors");
+    if (!d) {
+      host.innerHTML = '<div class="door door--prompt"><div class="skel">No board data yet.</div></div>' +
+                       '<div class="door door--question"><div class="skel">&nbsp;</div></div>';
+      return;
+    }
+    var pTag = d.promptSource === "typed"
+      ? '<span class="tag tag--yours">Yours</span>'
+      : '<span class="tag">Generated</span>';
+    var qTag = d.questionSource === "typed"
+      ? '<span class="tag tag--yours">Yours</span>'
+      : '<span class="tag">Generated</span>';
+
+    host.innerHTML =
+      '<button class="door door--prompt" id="door-prompt" aria-pressed="' + (picked === "prompt") + '">' +
+        '<span class="eyebrow">Prompt</span>' +
+        '<span class="door-body">' + esc(d.prompt) + '</span>' +
+        '<span class="door-foot">' + pTag +
+          (d.promptWhere ? '<span>' + esc(d.promptWhere) + '</span>' : '') +
+          '<span class="num">' + (d.promptMinutes || 45) + ' min</span>' +
+        '</span>' +
+      '</button>' +
+      '<button class="door door--question" id="door-question" aria-pressed="' + (picked === "question") + '">' +
+        '<span class="eyebrow">Question</span>' +
+        '<span class="door-body' + (d.questionSource === "generated" ? " is-generated" : "") + '">' + esc(d.question) + '</span>' +
+        '<span class="door-foot">' + qTag + '</span>' +
+      '</button>';
+
+    $("door-prompt").addEventListener("click", function () { pick("prompt"); });
+    $("door-question").addEventListener("click", function () { pick("question"); });
+    $("doors-state").textContent = picked ? "In session" : "";
+  }
+
+  function pick(which) {
+    picked = which;
+    renderDoors();
+    touch();
+    var d = state.doors || {};
+    if (which === "question" && d.questionId) {
+      var q = state.questions.filter(function (x) { return x.id === d.questionId; })[0];
+      if (q && !q.usedAt) {
+        q.usedAt = new Date().toISOString();
+        put("questions/" + q.id, q);
+      }
+    }
+    var key = todayKey();
+    var log = state.todayLog || { date: key, done: "", minutes: null, inTheWay: "" };
+    log.doorPicked = which;
+    log.projectId = (leadProject() || {}).id || null;
+    state.todayLog = log;
+    put("logs/" + key, log);
+    toast(which === "prompt" ? "Prompt it is. Go." : "Question it is. Go.");
+  }
+
+  function stepsHtml(p) {
+    var stages = p.stages || [];
+    var out = "";
+    stages.forEach(function (s, i) {
+      var cls = i < p.stageIndex ? "done" : (i === p.stageIndex ? "now" : "");
+      if (i > 0) out += '<span class="step-bar"></span>';
+      out += '<button class="step ' + cls + '" data-proj="' + esc(p.id) + '" data-i="' + i + '" title="Set stage: ' + esc(s) + '">' +
+             '<span class="step-dot"></span><span class="step-label">' + esc(s) + '</span></button>';
+    });
+    return '<div class="steps">' + out + '</div>';
+  }
+
+  function renderProjects() {
+    var host = $("projects");
+    var live = state.projects.filter(function (p) { return !p.parked; }).sort(byOrder);
+    if (!live.length) {
+      host.innerHTML = '<div class="empty">' + (state.dbUp === false
+        ? "Can't reach your board from this device right now."
+        : "Nothing in flight yet.") + '</div>';
+      return;
+    }
+    host.innerHTML = live.map(function (p) {
+      var wait = p.blockedOn
+        ? '<span class="pill pill--wait">Waiting on ' + esc(p.blockedOn.who) +
+          (daysBetween(p.blockedOn.since) != null ? ' &middot; ' + daysBetween(p.blockedOn.since) + 'd' : '') + '</span>'
+        : '<span class="pill pill--mine">Yours to move</span>';
+
+      var songs = "";
+      if (p.hasSongs) {
+        var mine = state.songs.filter(function (s) { return s.projectId === p.id; })
+          .sort(function (a, b) { return a.n - b.n; });
+        songs = '<div class="songs">' + mine.map(function (s) {
+          var stage = (p.songStages && p.songStages[s.stageIndex]) || "—";
+          return '<div class="song">' +
+            '<span class="song-n num">' + s.n + '</span>' +
+            '<span class="song-main">' +
+              '<span class="song-title">' + esc(s.title) + '</span>' +
+              '<div class="song-credit">' + esc(s.credit) + (s.others ? ' &middot; ' + esc(s.others) : '') + '</div>' +
+              (s.openItem ? '<div class="song-open">' + esc(s.openItem) + '</div>' : '') +
+            '</span>' +
+            '<button class="song-stage" data-song="' + esc(s.id) + '">' + esc(stage) + '</button>' +
+          '</div>';
+        }).join("") + '</div>';
+      }
+
+      return '<div class="proj">' +
+        '<div class="proj-top">' +
+          '<div><div class="proj-name">' + esc(p.title) + '</div>' +
+          (p.subtitle ? '<div class="proj-sub">' + esc(p.subtitle) + '</div>' : '') + '</div>' +
+          wait +
+        '</div>' +
+        (p.stages && p.stages.length ? stepsHtml(p) : "") +
+        (p.nextAction ? '<div class="next-line">Next: <b>' + esc(p.nextAction) + '</b></div>' : "") +
+        songs +
+      '</div>';
+    }).join("");
+
+    Array.prototype.forEach.call(host.querySelectorAll(".step"), function (b) {
+      b.addEventListener("click", function () {
+        var p = state.projects.filter(function (x) { return x.id === b.dataset.proj; })[0];
+        if (!p) return;
+        p.stageIndex = Number(b.dataset.i);
+        renderProjects(); touch(); put("projects/" + p.id, p);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll(".song-stage"), function (b) {
+      b.addEventListener("click", function () {
+        var s = state.songs.filter(function (x) { return x.id === b.dataset.song; })[0];
+        if (!s) return;
+        var p = state.projects.filter(function (x) { return x.id === s.projectId; })[0];
+        var n = (p && p.songStages ? p.songStages.length : 1);
+        s.stageIndex = (Number(s.stageIndex || 0) + 1) % n;
+        renderProjects(); touch(); put("songs/" + s.id, s);
+      });
+    });
+  }
+
+  function renderQueue() {
+    var open = state.queue.filter(function (q) { return q.status === "queued"; });
+    $("queue-count").textContent = open.length ? open.length + " waiting" : "";
+
+    var live = state.projects.filter(function (p) { return !p.parked; }).sort(byOrder);
+    var chips = [{ id: "all", label: "All" }].concat(live.map(function (p) {
+      return { id: p.id, label: p.shortTitle || p.title };
+    }));
+    $("queue-chips").innerHTML = chips.map(function (c) {
+      return '<button class="chip" data-f="' + esc(c.id) + '" aria-pressed="' + (filter === c.id) + '">' + esc(c.label) + '</button>';
+    }).join("");
+    Array.prototype.forEach.call($("queue-chips").querySelectorAll(".chip"), function (b) {
+      b.addEventListener("click", function () { filter = b.dataset.f; showAll = false; renderQueue(); });
+    });
+
+    var shown = open.filter(function (q) { return filter === "all" || q.projectId === filter; });
+    var projOrder = {};
+    state.projects.forEach(function (p) { projOrder[p.id] = p.order == null ? 99 : p.order; });
+    shown.sort(function (a, b) {
+      var at = isTyped(a) ? 0 : 1, bt = isTyped(b) ? 0 : 1;
+      if (at !== bt) return at - bt;
+      var ao = projOrder[a.projectId] == null ? 99 : projOrder[a.projectId];
+      var bo = projOrder[b.projectId] == null ? 99 : projOrder[b.projectId];
+      if (ao !== bo) return ao - bo;
+      var ar = a.urgentRank == null ? 999 : a.urgentRank;
+      var br = b.urgentRank == null ? 999 : b.urgentRank;
+      return ar - br;
+    });
+
+    var host = $("queue");
+    if (!shown.length) {
+      host.innerHTML = '<div class="empty">Nothing waiting here.</div>';
+      return;
+    }
+    var CUT = 6;
+    var hidden = showAll ? 0 : Math.max(0, shown.length - CUT);
+    var visible = showAll ? shown : shown.slice(0, CUT);
+    host.innerHTML = visible.map(function (q) {
+      var proj = state.projects.filter(function (p) { return p.id === q.projectId; })[0];
+      return '<div class="qitem' + (isTyped(q) ? "" : " is-generated") + '">' +
+        '<div class="qtext">' + esc(q.text) + '</div>' +
+        '<div class="qmeta">' +
+          (isTyped(q) ? '<span class="tag tag--yours">Yours</span>' : '<span class="tag">Generated</span>') +
+          '<span class="who">' + esc((proj ? proj.shortTitle || proj.title : "")) + (q.kind ? " &middot; " + esc(q.kind) : "") + '</span>' +
+          '<span class="qacts">' +
+            '<button class="mini mini--place" data-place="' + esc(q.id) + '">Place</button>' +
+            '<button class="mini mini--kill" data-kill="' + esc(q.id) + '">Kill</button>' +
+          '</span>' +
+        '</div>' +
+      '</div>';
+    }).join("") + (hidden
+      ? '<button class="btn btn--ghost" id="queue-more">Show ' + hidden + ' more</button>'
+      : (showAll && shown.length > CUT ? '<button class="btn btn--ghost" id="queue-less">Show fewer</button>' : ''));
+
+    var moreBtn = $("queue-more");
+    if (moreBtn) moreBtn.addEventListener("click", function () { showAll = true; renderQueue(); });
+    var lessBtn = $("queue-less");
+    if (lessBtn) lessBtn.addEventListener("click", function () { showAll = false; renderQueue(); });
+
+    function resolve(id, status) {
+      var q = state.queue.filter(function (x) { return x.id === id; })[0];
+      if (!q) return;
+      q.status = status;
+      q.resolvedAt = new Date().toISOString();
+      renderQueue(); touch(); put("queue/" + q.id, q);
+      toast(status === "placed" ? "Placed." : "Killed. Gone from the list.");
+    }
+    Array.prototype.forEach.call(host.querySelectorAll("[data-place]"), function (b) {
+      b.addEventListener("click", function () { resolve(b.dataset.place, "placed"); });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll("[data-kill]"), function (b) {
+      b.addEventListener("click", function () { resolve(b.dataset.kill, "killed"); });
+    });
+  }
+
+  function renderParked() {
+    var parked = state.projects.filter(function (p) { return p.parked; }).sort(byOrder);
+    $("parked").innerHTML = parked.length
+      ? parked.map(function (p) {
+          return '<div class="parked-item"><span>' + esc(p.title) + '</span><span>' + esc(p.parkedNote || "") + '</span></div>';
+        }).join("")
+      : '<div class="empty">Nothing parked.</div>';
+  }
+
+  function renderLog() {
+    var l = state.todayLog;
+    if (!l) return;
+    if (!$("log-done").value) $("log-done").value = l.done || "";
+    if (!$("log-way").value) $("log-way").value = l.inTheWay || "";
+    if (!$("log-min").value && l.minutes != null) $("log-min").value = l.minutes;
+    if (l.savedAt) $("log-note").textContent = "Saved.";
+  }
+
+  function renderAll() {
+    renderSince(); renderDoors(); renderProjects(); renderQueue(); renderParked(); renderLog();
+  }
+
+  /* ---------- footer actions ---------- */
+
+  function memMarkdown() {
+    var out = ["Release Board -- state", "",
+      "Mirror of the Release Board. Written when Alexandre presses Save to Mem. The board is authoritative for status; Mem is authoritative for material.", "",
+      "Last checkpoint: " + todayKey(), "", "## In flight", ""];
+    state.projects.filter(function (p) { return !p.parked; }).sort(byOrder).forEach(function (p) {
+      out.push("### " + p.title + (p.subtitle ? " — " + p.subtitle : ""));
+      out.push("- Role: " + p.role);
+      out.push("- Stage: " + ((p.stages && p.stages[p.stageIndex]) || "—"));
+      out.push("- Waiting on: " + (p.blockedOn ? p.blockedOn.who + " — " + p.blockedOn.what : "himself"));
+      if (p.nextAction) out.push("- Next: " + p.nextAction);
+      if (p.hasSongs) {
+        out.push("");
+        out.push("| # | Title | Credit | Stage |");
+        out.push("|---|---|---|---|");
+        state.songs.filter(function (s) { return s.projectId === p.id; })
+          .sort(function (a, b) { return a.n - b.n; })
+          .forEach(function (s) {
+            out.push("| " + s.n + " | " + s.title + " | " + s.credit + " | " + ((p.songStages && p.songStages[s.stageIndex]) || "—") + " |");
+          });
+      }
+      out.push("");
+    });
+    var open = state.queue.filter(function (q) { return q.status === "queued"; });
+    out.push("## Written, not placed");
+    out.push("");
+    out.push(open.length + " waiting. His own words first; generated items marked.");
+    out.push("");
+    open.slice(0, 40).forEach(function (q) {
+      out.push("- " + (isTyped(q) ? "" : "(generated) ") + q.text);
+    });
+    out.push("");
+    out.push("## Parked");
+    out.push("");
+    state.projects.filter(function (p) { return p.parked; }).forEach(function (p) {
+      out.push("- " + p.title + (p.parkedNote ? " — " + p.parkedNote : ""));
+    });
+    return out.join("\n");
+  }
+
+  function saveToMem() {
+    if (!caps.mcp) { toast("Mem isn't connected in this view."); return; }
+    if (busy) return;
+    busy = true;
+    var btn = $("btn-mem");
+    btn.disabled = true; btn.textContent = "Saving…";
+    caps.mcp.callTool(MEM_SERVER, "get_note", { note_id: MEM_NOTE_ID })
+      .then(function (res) {
+        var p = res && res.payload;
+        var version = p && p.version;
+        if (!version) throw { code: "tool_error", message: "no version" };
+        return caps.mcp.callTool(MEM_SERVER, "update_note", {
+          note_id: MEM_NOTE_ID, content: memMarkdown(), version: version
+        });
+      })
+      .then(function () {
+        toast("Saved to Mem.");
+        var b = state.board || {}; b.lastMemSaveAt = new Date().toISOString(); state.board = b;
+        put("meta/board", b);
+      })
+      .catch(function (e) {
+        var code = e && e.code;
+        if (code === "server_not_connected" || code === "not_granted") toast("Mem isn't connected to this page.");
+        else if (code === "cancelled") toast("Cancelled.");
+        else toast("Mem didn't accept that. Nothing was changed.");
+      })
+      .then(function () {
+        busy = false; btn.disabled = false; btn.textContent = "Save to Mem";
+      });
+  }
+
+  function exportJson() {
+    var payload = {
+      exportedAt: new Date().toISOString(),
+      projects: state.projects, songs: state.songs,
+      queue: state.queue, questions: state.questions, board: state.board
+    };
+    var data = JSON.stringify(payload, null, 2);
+    if (!caps.downloads) { toast("Downloads aren't available in this view."); return; }
+    caps.downloads.save({ filename: "release-board-" + todayKey() + ".json", data: data })
+      .then(function () { toast("Exported."); })
+      .catch(function (e) {
+        if (e && e.code === "declined") return;
+        toast("Couldn't export that.");
+      });
+  }
+
+  function saveLog() {
+    var key = todayKey();
+    var min = $("log-min").value;
+    var log = state.todayLog || { date: key };
+    log.date = key;
+    log.done = $("log-done").value.trim();
+    log.inTheWay = $("log-way").value.trim();
+    log.minutes = min === "" ? null : Number(min);
+    log.doorPicked = (state.todayLog && state.todayLog.doorPicked) || picked || null;
+    log.savedAt = new Date().toISOString();
+    state.todayLog = log;
+    $("log-note").textContent = "Saved.";
+    touch();
+    put("logs/" + key, log);
+  }
+
+  /* ---------- wiring ---------- */
+
+  $("btn-two-more").addEventListener("click", function () {
+    var b = $("btn-two-more");
+    b.disabled = true; b.textContent = "Thinking…";
+    var away = state.board ? daysBetween(state.board.lastTouchedAt) : 0;
+    generateDoors(away != null && away >= 7).then(function (d) {
+      if (d) setDoors(d);
+      b.disabled = false; b.textContent = "Two more";
+      if (!caps.sample) b.disabled = true;
+    });
+  });
+
+  $("btn-keep-q").addEventListener("click", function () {
+    var d = state.doors;
+    if (!d || !d.question) return;
+    var lead = leadProject();
+    var id = "q" + Date.now().toString(36);
+    var item = {
+      id: id, projectId: lead ? lead.id : null, text: d.question, kind: "question",
+      provenance: d.questionSource === "typed" ? "typed" : "generated",
+      status: "queued", createdAt: new Date().toISOString()
+    };
+    state.queue.push(item);
+    renderQueue(); touch(); put("queue/" + id, item);
+    toast("Kept. It's in the list below.");
+  });
+
+  $("btn-log").addEventListener("click", saveLog);
+  $("btn-mem").addEventListener("click", saveToMem);
+  $("btn-export").addEventListener("click", exportJson);
+
+  /* ---------- boot ---------- */
+
+  var cached = readCache();
+  if (cached) {
+    state.projects = cached.projects || [];
+    state.songs = cached.songs || [];
+    state.queue = cached.queue || [];
+    state.questions = cached.questions || [];
+    state.board = cached.board || null;
+    state.doors = cached.doors || null;
+    renderAll();
+  }
+
+  $("foot-note").textContent = "Private to you. Anyone with the link can read it, so keep unreleased work and anything personal out of it.";
+
+  function collect(snap) {
+    return snap.docs.map(function (d) {
+      var o = Object.assign({}, d.data());
+      o.id = d.id;
+      return o;
+    });
+  }
+
+  function ensureDoors() {
+    var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
+    var small = away != null && away >= 7;
+    var d = state.doors;
+    var fresh = d && d.generatedAt && (Date.now() - Date.parse(d.generatedAt) < DAY / 2);
+    if (!fresh) setDoors(buildDoorsFromHisOwn(small));
+    else renderDoors();
+  }
+
+  if (!window.claude || !window.claude.use) {
+    state.dbUp = false;
+    ensureDoors();
+    renderAll();
+    return;
+  }
+
+  window.claude.use("db").then(function (db) {
+    caps.db = db;
+    state.dbUp = !!db;
+    if (!db) {
+      $("foot-note").textContent = "Working offline — changes on this device aren't being saved. " + $("foot-note").textContent;
+      ensureDoors(); renderAll();
+      return;
+    }
+    function sub(path, key, after) {
+      db.collection(path).onSnapshot(function (snap) {
+        state[key] = collect(snap);
+        writeCache();
+        if (after) after();
+      }, function () { /* terminal; cached view stays on screen */ });
+    }
+    sub("projects", "projects", function () { renderProjects(); renderQueue(); renderParked(); });
+    sub("songs", "songs", renderProjects);
+    sub("queue", "queue", renderQueue);
+    sub("questions", "questions", function () {
+      state.ready = true;
+      var d = state.doors;
+      if (d && d.questionSource === "generated" && unusedTypedQuestion()) {
+        var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
+        setDoors(buildDoorsFromHisOwn(away != null && away >= 7));
+      }
+    });
+
+    db.doc("meta/board").onSnapshot(function (s) {
+      state.board = s.exists ? Object.assign({}, s.data()) : { lastTouchedAt: new Date().toISOString() };
+      renderSince();
+    }, function () {});
+
+    db.doc("meta/doors").get().then(function (s) {
+      if (s.exists) state.doors = Object.assign({}, s.data());
+      setTimeout(ensureDoors, 400);
+    }, function () { ensureDoors(); });
+
+    db.doc("logs/" + todayKey()).get().then(function (s) {
+      if (s.exists) { state.todayLog = Object.assign({}, s.data()); picked = state.todayLog.doorPicked || null; renderLog(); renderDoors(); }
+    }, function () {});
+  });
+
+  window.claude.use("sample").then(function (s) {
+    caps.sample = s;
+    if (!s) { $("btn-two-more").disabled = true; $("btn-two-more").title = "Claude isn't available in this view."; }
+  });
+
+  window.claude.use("downloads").then(function (d) {
+    caps.downloads = d;
+    if (!d) $("btn-export").disabled = true;
+  });
+
+  window.claude.use("mcp").then(function (m) {
+    caps.mcp = m;
+    if (!m) { $("btn-mem").disabled = true; $("btn-mem").title = "Mem isn't connected in this view."; }
+  });
+
+  setTimeout(function () { if (!state.doors) ensureDoors(); }, 1800);
+})();
+</script>
