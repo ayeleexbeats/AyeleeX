@@ -14,8 +14,8 @@ writing). Both default to his own material; Claude only writes either one when h
 |---|---|
 | Page source | `board/index.html` |
 | Published page | https://claude.ai/code/artifact/27279921-9ef3-49df-9cc9-bb02e8f404d4 |
-| Board data | the artifact's own database (`projects`, `songs`, `queue`, `questions`, `logs`, `meta`) |
-| Mem mirror | note `Release Board -- state`, id `0d3602c2-7df2-50e0-8165-1149175ddec4`, in the `AyeleeX Persona` collection |
+| His writing | Mem, note `Release Board -- state`, id `0d3602c2-7df2-50e0-8165-1149175ddec4`, in the `AyeleeX Persona` collection. **This is the one folder.** |
+| Board data | the artifact's own database (`projects`, `songs`, `queue`, `questions`, `notes`, `logs`, `meta`) -- the app's working storage, not a second home |
 
 ## How it's put together
 
@@ -24,8 +24,14 @@ The page is published as a Claude Artifact and declares four runtime capabilitie
 - **db** — board state, so it's identical on phone and laptop and readable by Claude between sessions
 - **sample** — generates a fresh pair of doors when he asks for two more
 - **downloads** — the Export button writes the whole board to a JSON file he keeps
-- **mcp** (Mem) — **Save to Mem** reads the note's current version with `get_note`, then replaces
-  it with `update_note`. Never automatic; only on the button.
+- **mcp** (Mem) — notes push themselves to Mem a few minutes after he writes one, and immediately
+  when the page is hidden. Each push reads the note's current version with `get_note`, then
+  replaces it with `update_note`. The button forces an immediate checkpoint and reports state:
+  *Saved to Mem*, or *Not in Mem yet* in amber when a push failed. A note is always in the board's
+  store before any push is attempted, so a Mem outage never costs writing.
+
+`update_note` echoes the **pre-update** body in its response. Confirm a write with a fresh
+`get_note`, never by reading the write's own reply.
 
 Provenance is tracked on every queued item and question: `typed` (his words) or `generated`.
 His words render in the serif at full weight and always sort first; generated text renders

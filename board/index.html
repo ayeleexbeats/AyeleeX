@@ -425,6 +425,10 @@
   var lastLoadAt = 0;
   var noteTimer = null;
   var currentNoteId = null;
+  var memTimer = null;
+  var memPending = false;
+  var memFailed = false;
+  var MEM_DEBOUNCE = 3 * 60 * 1000;
   var caps = { db: null, sample: null, downloads: null, mcp: null };
   var filter = "all";
   var showAll = false;
@@ -945,7 +949,7 @@
     touch();
     put("notes/" + currentNoteId, doc).then(function (ok) {
       var el = $("note-state");
-      if (ok) { writeDraft(null); if (el) el.textContent = "Saved"; }
+      if (ok) { writeDraft(null); if (el) el.textContent = "Saved"; scheduleMem(); }
       else if (el) el.textContent = "Kept on this device";
     });
   }
@@ -1011,13 +1015,26 @@
     return out.join("\n");
   }
 
-  function saveToMem() {
-    if (!caps.mcp) { toast("Mem isn't connected in this view."); return; }
-    if (busy) return;
-    busy = true;
+  function memLabel() {
     var btn = $("btn-mem");
-    btn.disabled = true; btn.textContent = "Saving…";
-    caps.mcp.callTool(MEM_SERVER, "get_note", { note_id: MEM_NOTE_ID })
+    if (!btn || btn.disabled) return;
+    btn.textContent = memFailed ? "Not in Mem yet" : (memPending ? "Save to Mem" : "Saved to Mem");
+    btn.style.color = memFailed ? "var(--amber)" : "";
+    btn.style.borderColor = memFailed ? "var(--amber)" : "";
+  }
+
+  // Mem is the one place his writing is kept. The button is for an immediate
+  // checkpoint; nothing depends on him pressing it.
+  function saveToMem(quiet) {
+    if (!caps.mcp) { if (!quiet) toast("Mem isn't connected in this view."); return Promise.resolve(false); }
+    if (busy) { memPending = true; return Promise.resolve(false); }
+    busy = true;
+    if (memTimer) { clearTimeout(memTimer); memTimer = null; }
+    var btn = $("btn-mem");
+    var wasDisabled = btn.disabled;
+    btn.disabled = true; btn.textContent = "Saving\u2026";
+
+    return caps.mcp.callTool(MEM_SERVER, "get_note", { note_id: MEM_NOTE_ID })
       .then(function (res) {
         var p = res && res.payload;
         var version = p && p.version;
@@ -1027,19 +1044,38 @@
         });
       })
       .then(function () {
-        toast("Saved to Mem.");
+        memPending = false; memFailed = false;
+        if (!quiet) toast("Saved to Mem.");
         var b = state.board || {}; b.lastMemSaveAt = new Date().toISOString(); state.board = b;
         put("meta/board", b);
-      })
-      .catch(function (e) {
+        return true;
+      }, function (e) {
+        // His writing is already safe in the store; a failed push only changes the label.
+        memFailed = true; memPending = true;
         var code = e && e.code;
-        if (code === "server_not_connected" || code === "not_granted") toast("Mem isn't connected to this page.");
-        else if (code === "cancelled") toast("Cancelled.");
-        else toast("Mem didn't accept that. Nothing was changed.");
+        if (!quiet) {
+          if (code === "server_not_connected" || code === "not_granted") toast("Mem isn't connected to this page.");
+          else if (code === "cancelled") toast("Cancelled.");
+          else toast("Mem didn't accept that. Your note is still saved here.");
+        }
+        return false;
       })
-      .then(function () {
-        busy = false; btn.disabled = false; btn.textContent = "Save to Mem";
+      .then(function (ok) {
+        busy = false; btn.disabled = wasDisabled;
+        memLabel();
+        return ok;
       });
+  }
+
+  function scheduleMem() {
+    memPending = true;
+    memLabel();
+    if (memTimer || !caps.mcp) return;
+    memTimer = setTimeout(function () { memTimer = null; saveToMem(true); }, MEM_DEBOUNCE);
+  }
+
+  function flushMem() {
+    if (memPending && caps.mcp && !busy) saveToMem(true);
   }
 
   function exportJson() {
@@ -1104,7 +1140,7 @@
   });
 
   $("btn-log").addEventListener("click", saveLog);
-  $("btn-mem").addEventListener("click", saveToMem);
+  $("btn-mem").addEventListener("click", function () { saveToMem(false); });
   $("btn-export").addEventListener("click", exportJson);
 
   /* ---------- boot ---------- */
@@ -1121,7 +1157,10 @@
     renderAll();
   }
 
-  $("foot-note").textContent = "Private to you. Anyone with the link can read it, so keep unreleased work and anything personal out of it.";
+  $("foot-note").innerHTML =
+    "Your writing is kept in Mem, in the note <b>Release Board -- state</b>. Notes save themselves; " +
+    "the button is only for an immediate checkpoint.<br>" +
+    "Private to you. Anyone with the link can read it, so keep unreleased work and anything personal out of it.";
 
   function collect(snap) {
     return snap.docs.map(function (d) {
@@ -1284,7 +1323,9 @@
 
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") onWake("visible");
+    else flushMem();          // he's leaving -- don't strand a pending note
   });
+  window.addEventListener("pagehide", flushMem);
   window.addEventListener("pageshow", function () { onWake("pageshow"); });
   $("btn-refresh").addEventListener("click", function () { onWake("manual"); });
 
@@ -1301,6 +1342,7 @@
   window.claude.use("mcp").then(function (m) {
     caps.mcp = m;
     if (!m) { $("btn-mem").disabled = true; $("btn-mem").title = "Mem isn't connected in this view."; }
+    else { memLabel(); if (memPending) scheduleMem(); }
   });
 
   setTimeout(function () {
