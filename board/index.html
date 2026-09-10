@@ -157,6 +157,40 @@
   .tag--yours { border-color: var(--right); color: var(--right); }
 
   .doors-actions { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+
+  .mast-right { display: flex; align-items: baseline; gap: 10px; }
+  .refresh {
+    background: none; border: 0; padding: 0;
+    font-size: 12px; color: var(--slate); text-decoration: underline;
+    text-underline-offset: 3px; text-decoration-color: var(--line-2);
+  }
+  .refresh:hover { color: var(--ink); }
+  .refresh:disabled { opacity: .5; cursor: default; text-decoration: none; }
+  .stale-dot { color: var(--amber); }
+
+  #notebox { margin-top: 12px; }
+  .note-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--line-2);
+    border-radius: var(--r); padding: 13px 15px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .note-card.from-prompt { border-left-color: var(--left); }
+  .note-card.from-question { border-left-color: var(--right); }
+  .note-src {
+    font-family: var(--voice); font-style: italic; font-size: 15px;
+    line-height: 1.35; color: var(--ink-2);
+  }
+  .note-card.from-prompt .note-src { font-family: var(--ui); font-style: normal; font-size: 14px; }
+  .note-input {
+    font-family: var(--voice); font-size: 17px; line-height: 1.45; color: var(--ink);
+    background: transparent; border: 0; border-top: 1px solid var(--line);
+    padding: 10px 0 0; width: 100%; min-height: 108px; resize: vertical;
+  }
+  .note-input:focus { outline: none; }
+  .note-input::placeholder { color: var(--slate); opacity: .7; font-style: italic; }
+  .note-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .note-state { font-size: 11.5px; color: var(--slate); margin-left: auto; }
   .btn {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -288,7 +322,10 @@
 <div class="wrap">
   <div class="masthead">
     <h1>Release Board</h1>
-    <div class="since num" id="since"></div>
+    <div class="mast-right">
+      <span class="since num" id="since"></span>
+      <button class="refresh" id="btn-refresh" aria-label="Check for changes">Refresh</button>
+    </div>
   </div>
 
   <section aria-labelledby="doors-h">
@@ -305,6 +342,7 @@
       <button class="btn" id="btn-two-more">Two more</button>
       <button class="btn btn--ghost" id="btn-keep-q">Keep this question</button>
     </div>
+    <div id="notebox" hidden></div>
   </section>
 
   <section aria-labelledby="flight-h">
@@ -366,6 +404,7 @@
   var MEM_SERVER = "Mem";
   var MEM_NOTE_ID = "0d3602c2-7df2-50e0-8165-1149175ddec4";
   var LS_KEY = "releaseboard.snapshot.v1";
+  var NOTE_DRAFT_KEY = "releaseboard.notedraft.v1";
 
   var DAY = 86400000;
 
@@ -377,10 +416,15 @@
   ];
 
   var state = {
-    projects: [], songs: [], queue: [], questions: [],
-    board: null, doors: null, todayLog: null,
-    ready: false, dbUp: null
+    projects: [], songs: [], queue: [], questions: [], notes: [],
+    board: null, doors: null, todayLog: null, logKey: null,
+    ready: false, dbUp: null, loadedOnce: false, liveDown: false, revoked: false
   };
+  var unsubs = [];
+  var loading = null;
+  var lastLoadAt = 0;
+  var noteTimer = null;
+  var currentNoteId = null;
   var caps = { db: null, sample: null, downloads: null, mcp: null };
   var filter = "all";
   var showAll = false;
@@ -397,10 +441,11 @@
     });
   }
 
-  function todayKey() {
-    var d = new Date();
+  function dateKey(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
+
+  function todayKey() { return dateKey(new Date()); }
 
   function daysBetween(iso) {
     if (!iso) return null;
@@ -434,9 +479,20 @@
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
         projects: state.projects, songs: state.songs, queue: state.queue,
-        questions: state.questions, board: state.board, doors: state.doors
+        questions: state.questions, notes: state.notes, board: state.board, doors: state.doors
       }));
     } catch (e) { /* private mode, blocked storage: not fatal */ }
+  }
+
+  function readDraft() {
+    try { return JSON.parse(localStorage.getItem(NOTE_DRAFT_KEY) || "null"); } catch (e) { return null; }
+  }
+
+  function writeDraft(o) {
+    try {
+      if (o) localStorage.setItem(NOTE_DRAFT_KEY, JSON.stringify(o));
+      else localStorage.removeItem(NOTE_DRAFT_KEY);
+    } catch (e) { /* blocked storage is not fatal */ }
   }
 
   function byOrder(a, b) { return (a.order == null ? 99 : a.order) - (b.order == null ? 99 : b.order); }
@@ -478,6 +534,7 @@
 
   function buildDoorsFromHisOwn(small) {
     var p = leadProject();
+    var fromEmpty = !p;
     var q = unusedTypedQuestion();
     var prompt, promptWhere, minutes;
 
@@ -503,6 +560,7 @@
       question: q ? q.text : (EMERGENCY_QUESTIONS[Math.floor(Math.random() * EMERGENCY_QUESTIONS.length)]),
       questionSource: q ? "typed" : "generated",
       questionId: q ? q.id : null,
+      fromEmpty: fromEmpty,
       generatedAt: new Date().toISOString()
     };
   }
@@ -564,7 +622,11 @@
     if (!d) return;
     state.doors = d;
     picked = null;
+    currentNoteId = null;
     renderDoors();
+    renderNote();
+    // A pair built before the board loaded is a placeholder, not a decision. Show it, never store it.
+    if (d.fromEmpty) { writeCache(); return; }
     put("meta/doors", d);
   }
 
@@ -574,7 +636,9 @@
     var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
     var el = $("since");
     if (away == null) { el.textContent = ""; return; }
-    el.textContent = away === 0 ? "Here today" : "Last here " + plural(away, "day", "days") + " ago";
+    var base = away === 0 ? "Here today" : "Last here " + plural(away, "day", "days") + " ago";
+    el.innerHTML = esc(base) + (state.liveDown && !state.revoked
+      ? ' <span class="stale-dot" title="Live updates dropped. Tap Refresh.">&bull;</span>' : "");
 
     var slot = $("away-slot");
     if (away >= 7) {
@@ -623,8 +687,10 @@
   }
 
   function pick(which) {
+    if (picked !== which) currentNoteId = null;
     picked = which;
     renderDoors();
+    renderNote();
     touch();
     var d = state.doors || {};
     if (which === "question" && d.questionId) {
@@ -813,8 +879,79 @@
     if (l.savedAt) $("log-note").textContent = "Saved.";
   }
 
+  function noteKeyFor(which, src) { return todayKey() + "|" + which + "|" + src; }
+
+  function renderNote() {
+    var host = $("notebox");
+    var d = state.doors;
+    if (!picked || !d) { host.hidden = true; host.innerHTML = ""; host.dataset.for = ""; return; }
+
+    var isPrompt = picked === "prompt";
+    var src = isPrompt ? d.prompt : d.question;
+    var key = noteKeyFor(picked, src);
+    // Never rebuild the box while he is typing in it.
+    if (host.dataset.for === key) return;
+    host.dataset.for = key;
+    host.hidden = false;
+
+    host.innerHTML =
+      '<div class="note-card ' + (isPrompt ? "from-prompt" : "from-question") + '">' +
+        '<div class="note-src">' + esc(src) + '</div>' +
+        '<textarea class="note-input" id="note-input" placeholder="' +
+          (isPrompt ? "What happened when you tried it?" : "Answer it here. Badly is fine.") +
+        '"></textarea>' +
+        '<div class="note-foot">' +
+          '<button class="btn" id="note-save">Save note</button>' +
+          '<span class="note-state" id="note-state"></span>' +
+        '</div>' +
+      '</div>';
+
+    var ta = $("note-input");
+    var draft = readDraft();
+    if (draft && draft.key === key && draft.text) {
+      ta.value = draft.text;
+      if (draft.noteId) currentNoteId = draft.noteId;
+      $("note-state").textContent = "Unsaved draft restored";
+    }
+
+    ta.addEventListener("input", function () {
+      writeDraft({ key: key, text: ta.value, noteId: currentNoteId, at: Date.now() });
+      $("note-state").textContent = ta.value.trim() ? "Saving…" : "";
+      if (noteTimer) clearTimeout(noteTimer);
+      noteTimer = setTimeout(function () { saveNote(key, src, ta.value); }, 900);
+    });
+    $("note-save").addEventListener("click", function () {
+      if (noteTimer) clearTimeout(noteTimer);
+      saveNote(key, src, ta.value);
+    });
+  }
+
+  function saveNote(key, src, text) {
+    var body = text.trim();
+    if (!body) { $("note-state") && ($("note-state").textContent = ""); writeDraft(null); return; }
+    var now = new Date().toISOString();
+    if (!currentNoteId) currentNoteId = "n" + Date.now().toString(36);
+    var doc = {
+      id: currentNoteId, date: todayKey(), doorPicked: picked,
+      sourceText: src, projectId: (leadProject() || {}).id || null,
+      text: body, createdAt: now, updatedAt: now
+    };
+    var existing = state.notes.filter(function (n) { return n.id === currentNoteId; })[0];
+    if (existing) { doc.createdAt = existing.createdAt || now; Object.assign(existing, doc); }
+    else state.notes.push(doc);
+
+    // Hold the draft until the store confirms, so a suspend mid-save cannot eat it.
+    writeDraft({ key: key, text: text, noteId: currentNoteId, at: Date.now() });
+    touch();
+    put("notes/" + currentNoteId, doc).then(function (ok) {
+      var el = $("note-state");
+      if (ok) { writeDraft(null); if (el) el.textContent = "Saved"; }
+      else if (el) el.textContent = "Kept on this device";
+    });
+  }
+
   function renderAll() {
-    renderSince(); renderDoors(); renderProjects(); renderQueue(); renderParked(); renderLog();
+    renderSince(); renderDoors(); renderNote(); renderProjects(); renderQueue(); renderParked(); renderLog();
   }
 
   /* ---------- footer actions ---------- */
@@ -850,6 +987,22 @@
       out.push("- " + (isTyped(q) ? "" : "(generated) ") + q.text);
     });
     out.push("");
+    var notes = state.notes.slice().sort(function (a, b) {
+      return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
+    });
+    if (notes.length) {
+      out.push("## Notes");
+      out.push("");
+      out.push("Written at the door, newest first. His own words.");
+      out.push("");
+      notes.slice(0, 30).forEach(function (n) {
+        out.push("**" + (n.date || "") + " \u2014 " + (n.doorPicked === "prompt" ? "prompt" : "question") + "**");
+        if (n.sourceText) out.push("> " + n.sourceText);
+        out.push("");
+        out.push(n.text);
+        out.push("");
+      });
+    }
     out.push("## Parked");
     out.push("");
     state.projects.filter(function (p) { return p.parked; }).forEach(function (p) {
@@ -893,7 +1046,8 @@
     var payload = {
       exportedAt: new Date().toISOString(),
       projects: state.projects, songs: state.songs,
-      queue: state.queue, questions: state.questions, board: state.board
+      queue: state.queue, questions: state.questions,
+      notes: state.notes, board: state.board
     };
     var data = JSON.stringify(payload, null, 2);
     if (!caps.downloads) { toast("Downloads aren't available in this view."); return; }
@@ -961,6 +1115,7 @@
     state.songs = cached.songs || [];
     state.queue = cached.queue || [];
     state.questions = cached.questions || [];
+    state.notes = cached.notes || [];
     state.board = cached.board || null;
     state.doors = cached.doors || null;
     renderAll();
@@ -976,13 +1131,136 @@
     });
   }
 
+  function clearLogFields() {
+    $("log-done").value = ""; $("log-way").value = ""; $("log-min").value = "";
+    $("log-note").textContent = "";
+  }
+
+  function setRefreshBusy(busy, ok) {
+    var b = $("btn-refresh");
+    if (!b) return;
+    b.disabled = !!busy;
+    if (busy) { b.textContent = "Checking\u2026"; return; }
+    b.textContent = ok ? "Updated" : "Refresh";
+    if (ok) setTimeout(function () { if (!loading) b.textContent = "Refresh"; }, 1800);
+  }
+
+  // The whole board, read fresh. Called on boot and every time the page wakes --
+  // iOS resumes a home-screen page rather than reloading it, so without this the
+  // board shows whatever was on screen when it was last closed.
+  function loadAll(reason) {
+    var db = caps.db;
+    if (!db) { renderAll(); return Promise.resolve(false); }
+    if (loading) return loading;
+    var now = Date.now();
+    if (reason !== "manual" && now - lastLoadAt < 8000) return Promise.resolve(false);
+    lastLoadAt = now;
+    setRefreshBusy(true);
+    var key = todayKey();
+
+    loading = Promise.all([
+      db.collection("projects").get(),
+      db.collection("songs").get(),
+      db.collection("queue").get(),
+      db.collection("questions").get(),
+      db.collection("notes").get(),
+      db.doc("meta/board").get(),
+      db.doc("meta/doors").get(),
+      db.doc("logs/" + key).get()
+    ]).then(function (r) {
+      state.projects = collect(r[0]);
+      state.songs = collect(r[1]);
+      state.queue = collect(r[2]);
+      state.questions = collect(r[3]);
+      state.notes = collect(r[4]);
+      state.board = r[5].exists ? Object.assign({}, r[5].data()) : { lastTouchedAt: new Date().toISOString() };
+      if (r[6].exists) state.doors = Object.assign({}, r[6].data());
+
+      if (state.logKey !== key) {   // day rolled over while the page sat open
+        state.logKey = key;
+        state.todayLog = null;
+        picked = null;
+        currentNoteId = null;
+        clearLogFields();
+      }
+      if (r[7].exists) {
+        state.todayLog = Object.assign({}, r[7].data());
+        picked = state.todayLog.doorPicked || picked;
+      }
+
+      state.loadedOnce = true;
+      state.liveDown = false;
+      writeCache();
+      ensureDoors();
+      renderAll();
+      return true;
+    }, function () {
+      return false;
+    }).then(function (ok) {
+      loading = null;
+      setRefreshBusy(false, ok);
+      return ok;
+    });
+
+    return loading;
+  }
+
+  function subscribeAll() {
+    var db = caps.db;
+    if (!db || state.revoked) return;
+    unsubs.forEach(function (u) { try { u(); } catch (e) {} });
+    unsubs = [];
+
+    function onErr(e) {
+      state.liveDown = true;
+      if (e && e.code === "revoked") state.revoked = true;
+      renderSince();
+    }
+    function sub(path, key, after) {
+      unsubs.push(db.collection(path).onSnapshot(function (snap) {
+        state[key] = collect(snap);
+        state.liveDown = false;
+        writeCache();
+        if (after) after();
+      }, onErr));
+    }
+
+    sub("projects", "projects", function () { renderProjects(); renderQueue(); renderParked(); });
+    sub("songs", "songs", renderProjects);
+    sub("queue", "queue", renderQueue);
+    sub("notes", "notes", null);
+    sub("questions", "questions", function () {
+      state.ready = true;
+      var d = state.doors;
+      if (d && d.questionSource === "generated" && unusedTypedQuestion()) {
+        var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
+        setDoors(buildDoorsFromHisOwn(away != null && away >= 7));
+      }
+    });
+
+    unsubs.push(db.doc("meta/board").onSnapshot(function (snap) {
+      state.board = snap.exists ? Object.assign({}, snap.data()) : { lastTouchedAt: new Date().toISOString() };
+      renderSince();
+    }, onErr));
+  }
+
+  function onWake(reason) {
+    if (document.visibilityState === "hidden") return;
+    // A dead stream only recovers with a fresh onSnapshot.
+    if (state.liveDown && !state.revoked) subscribeAll();
+    loadAll(reason || "wake");
+  }
+
   function ensureDoors() {
+    // Don't build a pair from a board that hasn't answered yet -- that is what produced
+    // the useless "Add a project to the board" prompt.
+    if (!state.loadedOnce && !state.projects.length && state.dbUp !== false) return;
     var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
     var small = away != null && away >= 7;
     var d = state.doors;
-    var fresh = d && d.generatedAt && (Date.now() - Date.parse(d.generatedAt) < DAY / 2);
+    var fresh = d && !d.fromEmpty && d.generatedAt && dateKey(new Date(d.generatedAt)) === todayKey();
     if (!fresh) setDoors(buildDoorsFromHisOwn(small));
-    else renderDoors();
+    else { renderDoors(); renderNote(); }
   }
 
   if (!window.claude || !window.claude.use) {
@@ -1000,39 +1278,15 @@
       ensureDoors(); renderAll();
       return;
     }
-    function sub(path, key, after) {
-      db.collection(path).onSnapshot(function (snap) {
-        state[key] = collect(snap);
-        writeCache();
-        if (after) after();
-      }, function () { /* terminal; cached view stays on screen */ });
-    }
-    sub("projects", "projects", function () { renderProjects(); renderQueue(); renderParked(); });
-    sub("songs", "songs", renderProjects);
-    sub("queue", "queue", renderQueue);
-    sub("questions", "questions", function () {
-      state.ready = true;
-      var d = state.doors;
-      if (d && d.questionSource === "generated" && unusedTypedQuestion()) {
-        var away = state.board ? daysBetween(state.board.lastTouchedAt) : null;
-        setDoors(buildDoorsFromHisOwn(away != null && away >= 7));
-      }
-    });
-
-    db.doc("meta/board").onSnapshot(function (s) {
-      state.board = s.exists ? Object.assign({}, s.data()) : { lastTouchedAt: new Date().toISOString() };
-      renderSince();
-    }, function () {});
-
-    db.doc("meta/doors").get().then(function (s) {
-      if (s.exists) state.doors = Object.assign({}, s.data());
-      setTimeout(ensureDoors, 400);
-    }, function () { ensureDoors(); });
-
-    db.doc("logs/" + todayKey()).get().then(function (s) {
-      if (s.exists) { state.todayLog = Object.assign({}, s.data()); picked = state.todayLog.doorPicked || null; renderLog(); renderDoors(); }
-    }, function () {});
+    subscribeAll();
+    loadAll("boot");
   });
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") onWake("visible");
+  });
+  window.addEventListener("pageshow", function () { onWake("pageshow"); });
+  $("btn-refresh").addEventListener("click", function () { onWake("manual"); });
 
   window.claude.use("sample").then(function (s) {
     caps.sample = s;
@@ -1049,6 +1303,8 @@
     if (!m) { $("btn-mem").disabled = true; $("btn-mem").title = "Mem isn't connected in this view."; }
   });
 
-  setTimeout(function () { if (!state.doors) ensureDoors(); }, 1800);
+  setTimeout(function () {
+    if (!state.loadedOnce && !state.doors) { state.dbUp = false; ensureDoors(); renderAll(); }
+  }, 2500);
 })();
 </script>
