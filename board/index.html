@@ -168,6 +168,24 @@
   .refresh:disabled { opacity: .5; cursor: default; text-decoration: none; }
   .stale-dot { color: var(--amber); }
 
+  .wlist { display: flex; flex-direction: column; gap: 10px; }
+  .wnote {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--line-2);
+    border-radius: var(--r); padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .wnote.from-prompt { border-left-color: var(--left); }
+  .wnote.from-question { border-left-color: var(--right); }
+  .wnote-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .wnote-when { font-size: 11px; color: var(--slate); }
+  .wnote-src {
+    font-family: var(--voice); font-style: italic; font-size: 13.5px;
+    line-height: 1.35; color: var(--slate);
+    padding-left: 9px; border-left: 2px solid var(--line);
+  }
+  .wnote-text { font-family: var(--voice); font-size: 16px; line-height: 1.5; white-space: pre-wrap; }
+
   #notebox { margin-top: 12px; }
   .note-card {
     background: var(--surface); border: 1px solid var(--line);
@@ -359,6 +377,14 @@
     <div class="qlist" id="queue"></div>
   </section>
 
+  <section aria-labelledby="written-h">
+    <div class="sec-head">
+      <h2 id="written-h">Written at the door</h2>
+      <span class="eyebrow num" id="written-count"></span>
+    </div>
+    <div class="wlist" id="written"></div>
+  </section>
+
   <section aria-labelledby="log-h">
     <div class="sec-head"><h2 id="log-h">Tonight</h2></div>
     <div class="logbox">
@@ -426,12 +452,13 @@
   var noteTimer = null;
   var currentNoteId = null;
   var memTimer = null;
-  var memPending = false;
   var memFailed = false;
-  var MEM_DEBOUNCE = 3 * 60 * 1000;
+  var noteDirty = false;
+  var MEM_DEBOUNCE = 25 * 1000;
   var caps = { db: null, sample: null, downloads: null, mcp: null };
   var filter = "all";
   var showAll = false;
+  var writtenAll = false;
   var picked = null;
   var busy = false;
 
@@ -624,6 +651,7 @@
 
   function setDoors(d) {
     if (!d) return;
+    if (noteDirty) return;   // don't swap the door under an unfinished note
     state.doors = d;
     picked = null;
     currentNoteId = null;
@@ -888,6 +916,10 @@
   function renderNote() {
     var host = $("notebox");
     var d = state.doors;
+    // Unsaved text on screen is sacred. Nothing -- a wake, a new day, a door swap --
+    // gets to replace the box while he is mid-sentence.
+    var ta = $("note-input");
+    if (ta && (noteDirty || document.activeElement === ta)) return;
     if (!picked || !d) { host.hidden = true; host.innerHTML = ""; host.dataset.for = ""; return; }
 
     var isPrompt = picked === "prompt";
@@ -919,6 +951,7 @@
     }
 
     ta.addEventListener("input", function () {
+      noteDirty = true;
       writeDraft({ key: key, text: ta.value, noteId: currentNoteId, at: Date.now() });
       $("note-state").textContent = ta.value.trim() ? "Saving…" : "";
       if (noteTimer) clearTimeout(noteTimer);
@@ -949,13 +982,66 @@
     touch();
     put("notes/" + currentNoteId, doc).then(function (ok) {
       var el = $("note-state");
-      if (ok) { writeDraft(null); if (el) el.textContent = "Saved"; scheduleMem(); }
-      else if (el) el.textContent = "Kept on this device";
+      if (ok) {
+        noteDirty = false;
+        writeDraft(null);
+        if (el) el.textContent = "Saved \u00b7 " + whenLabel(doc.updatedAt);
+        renderWritten();
+        scheduleMem();
+      } else if (el) el.textContent = "Kept on this device";
     });
   }
 
+  function whenLabel(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return "";
+    var d = new Date(t);
+    var days = Math.floor((Date.now() - t) / DAY);
+    var time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    if (dateKey(d) === todayKey()) return "Today, " + time;
+    if (days < 7) return d.toLocaleDateString([], { weekday: "long" }) + ", " + time;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + time;
+  }
+
+  // What he has already written. Without this the box looks empty on every open
+  // and saved work reads as lost.
+  function renderWritten() {
+    var host = $("written");
+    var all = state.notes.slice().sort(function (a, b) {
+      return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
+    });
+    $("written-count").textContent = all.length ? all.length + (all.length === 1 ? " note" : " notes") : "";
+
+    if (!all.length) {
+      host.innerHTML = '<div class="empty">Nothing yet. Tap a door above and write.</div>';
+      return;
+    }
+    var CUT = 3;
+    var shown = writtenAll ? all : all.slice(0, CUT);
+    var hidden = all.length - shown.length;
+
+    host.innerHTML = shown.map(function (n) {
+      return '<div class="wnote ' + (n.doorPicked === "prompt" ? "from-prompt" : "from-question") + '">' +
+        '<div class="wnote-head">' +
+          '<span class="tag tag--yours">Yours</span>' +
+          '<span class="wnote-when">' + esc(whenLabel(n.updatedAt || n.createdAt)) + '</span>' +
+        '</div>' +
+        (n.sourceText ? '<div class="wnote-src">' + esc(n.sourceText) + '</div>' : '') +
+        '<div class="wnote-text">' + esc(n.text) + '</div>' +
+      '</div>';
+    }).join("") + (hidden
+      ? '<button class="btn btn--ghost" id="written-more">Show ' + hidden + ' more</button>'
+      : (writtenAll && all.length > CUT ? '<button class="btn btn--ghost" id="written-less">Show fewer</button>' : ''));
+
+    var more = $("written-more");
+    if (more) more.addEventListener("click", function () { writtenAll = true; renderWritten(); });
+    var less = $("written-less");
+    if (less) less.addEventListener("click", function () { writtenAll = false; renderWritten(); });
+  }
+
   function renderAll() {
-    renderSince(); renderDoors(); renderNote(); renderProjects(); renderQueue(); renderParked(); renderLog();
+    renderSince(); renderDoors(); renderNote(); renderProjects(); renderQueue();
+    renderWritten(); renderParked(); renderLog();
   }
 
   /* ---------- footer actions ---------- */
@@ -1015,19 +1101,36 @@
     return out.join("\n");
   }
 
+  // Whether Mem is behind is a FACT about timestamps, not a flag in memory.
+  // A flag dies when iOS kills the page; this survives and self-heals on the next open.
+  function memPendingNow() {
+    var last = (state.board && state.board.lastMemSaveAt) || "";
+    var newest = "";
+    state.notes.forEach(function (n) {
+      var t = n.updatedAt || n.createdAt || "";
+      if (t > newest) newest = t;
+    });
+    return !!newest && newest > last;
+  }
+
   function memLabel() {
     var btn = $("btn-mem");
     if (!btn || btn.disabled) return;
-    btn.textContent = memFailed ? "Not in Mem yet" : (memPending ? "Save to Mem" : "Saved to Mem");
-    btn.style.color = memFailed ? "var(--amber)" : "";
-    btn.style.borderColor = memFailed ? "var(--amber)" : "";
+    var pending = memPendingNow();
+    var last = state.board && state.board.lastMemSaveAt;
+    if (pending && memFailed) btn.textContent = "Not in Mem yet";
+    else if (pending) btn.textContent = "Save to Mem";
+    else btn.textContent = last ? "Saved to Mem \u00b7 " + whenLabel(last) : "Saved to Mem";
+    var warn = pending && memFailed;
+    btn.style.color = warn ? "var(--amber)" : "";
+    btn.style.borderColor = warn ? "var(--amber)" : "";
   }
 
   // Mem is the one place his writing is kept. The button is for an immediate
   // checkpoint; nothing depends on him pressing it.
   function saveToMem(quiet) {
     if (!caps.mcp) { if (!quiet) toast("Mem isn't connected in this view."); return Promise.resolve(false); }
-    if (busy) { memPending = true; return Promise.resolve(false); }
+    if (busy) return Promise.resolve(false);   // pending is derived; nothing to remember
     busy = true;
     if (memTimer) { clearTimeout(memTimer); memTimer = null; }
     var btn = $("btn-mem");
@@ -1044,14 +1147,14 @@
         });
       })
       .then(function () {
-        memPending = false; memFailed = false;
+        memFailed = false;
         if (!quiet) toast("Saved to Mem.");
         var b = state.board || {}; b.lastMemSaveAt = new Date().toISOString(); state.board = b;
         put("meta/board", b);
         return true;
       }, function (e) {
         // His writing is already safe in the store; a failed push only changes the label.
-        memFailed = true; memPending = true;
+        memFailed = true;
         var code = e && e.code;
         if (!quiet) {
           if (code === "server_not_connected" || code === "not_granted") toast("Mem isn't connected to this page.");
@@ -1068,14 +1171,21 @@
   }
 
   function scheduleMem() {
-    memPending = true;
     memLabel();
     if (memTimer || !caps.mcp) return;
     memTimer = setTimeout(function () { memTimer = null; saveToMem(true); }, MEM_DEBOUNCE);
   }
 
+  // Best effort on the way out. iOS often suspends before two connector calls finish,
+  // so this is a bonus -- catchUpMem() on the next open is the real mechanism.
   function flushMem() {
-    if (memPending && caps.mcp && !busy) saveToMem(true);
+    if (memPendingNow() && caps.mcp && !busy) saveToMem(true);
+  }
+
+  // Runs after every load. A push missed because the phone slept happens here instead.
+  function catchUpMem() {
+    memLabel();
+    if (memPendingNow() && caps.mcp && !busy) saveToMem(true);
   }
 
   function exportJson() {
@@ -1232,6 +1342,7 @@
       writeCache();
       ensureDoors();
       renderAll();
+      catchUpMem();
       return true;
     }, function () {
       return false;
@@ -1342,7 +1453,7 @@
   window.claude.use("mcp").then(function (m) {
     caps.mcp = m;
     if (!m) { $("btn-mem").disabled = true; $("btn-mem").title = "Mem isn't connected in this view."; }
-    else { memLabel(); if (memPending) scheduleMem(); }
+    else catchUpMem();
   });
 
   setTimeout(function () {
