@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BAD THINGS CASE FILES</title>
+<meta property="og:title" content="BAD THINGS CASE FILES">
+<meta property="og:description" content="1.7 million people have watched his antics. Nobody knows who he is.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16140f; --paper:#e9dcb4; --paper-2:#dccd9f; --ink:#221d12; --muted:#6b5f43;
+    --red:#b3261e; --line:#b9a879;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Courier Prime',ui-monospace,Menlo,monospace;font-size:16px;line-height:1.5}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 14px 48px}
+  .folder{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:22px 18px;position:relative;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .screen[hidden]{display:none}
+  h1,h2{font-family:'Special Elite',serif;font-weight:400;margin:0;letter-spacing:.02em}
+  h1{font-size:30px;line-height:1.1;text-transform:uppercase}
+  h2{font-size:22px;text-transform:uppercase;margin-bottom:10px}
+  h1:focus,h2:focus{outline:none}
+  .meta{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+  .stamp{display:inline-block;border:3px solid var(--red);color:var(--red);font-family:'Special Elite',serif;text-transform:uppercase;padding:2px 10px;letter-spacing:.08em;transform:rotate(-4deg);font-size:18px}
+  .stamp.big{position:absolute;right:14px;top:16px;font-size:16px}
+  .tag{display:inline-block;background:var(--ink);color:var(--paper);font-size:12px;padding:1px 7px;margin-right:6px;text-transform:uppercase;letter-spacing:.06em}
+  video{width:100%;display:block;background:#000;border:1px solid var(--ink);max-height:68vh}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .card{background:var(--paper-2);border:1px solid var(--line);padding:6px;text-align:left;font:inherit;color:inherit;cursor:pointer;display:block;width:100%}
+  .card img{width:100%;display:block;border:1px solid var(--ink)}
+  .card .t{font-weight:700;margin-top:6px;font-size:14px}
+  .card .n{font-size:13px;line-height:1.35;color:var(--muted)}
+  .card.key{outline:3px solid var(--red);outline-offset:-3px}
+  .card:focus-visible,button:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+  textarea{width:100%;min-height:110px;background:#f4ebc9;border:1px solid var(--ink);padding:10px;font:inherit;color:var(--ink);resize:vertical}
+  button.primary,a.btn{display:inline-block;background:var(--ink);color:var(--paper);border:0;padding:13px 18px;font:inherit;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;text-decoration:none;margin-top:12px}
+  button.link{background:none;border:0;padding:8px 0;margin-top:6px;font:inherit;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap}
+  .nav .primary{margin-top:0}
+  .nav .link{margin-top:0}
+  .prog{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+  .topbar{position:sticky;top:0;z-index:10;margin:-20px -14px 14px;padding:10px 14px;background:rgba(22,20,15,.94)}
+  .topbar[hidden]{display:none}
+  .backbtn{background:transparent;color:var(--paper);border:2px solid var(--paper);padding:8px 14px;font:inherit;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+  .backbtn:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  .cases{display:grid;gap:12px;margin-top:18px}
+  .case{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--paper-2);border:1px solid var(--line);padding:8px}
+  button.case{cursor:pointer}
+  .case img,.case .ph{width:64px;height:96px;object-fit:cover;border:1px solid var(--ink);flex:none;display:block}
+  .case .ph{background:var(--ink)}
+  .case .who{flex:1;min-width:0}
+  .case .cn{font-family:'Special Elite',serif;font-size:19px;text-transform:uppercase;line-height:1.2}
+  .case .views{font-weight:700}
+  .case .q{font-family:'Special Elite',serif;color:var(--red);font-size:16px;line-height:1.2;display:inline-block;margin:4px 0}
+  .case .state{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .case.locked{opacity:.7}
+  button.case:disabled{cursor:default;color:inherit}
+  .case.open{outline:3px solid var(--red);outline-offset:-3px}
+  .case:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+  .facts{margin:14px 0 4px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+  .facts dt{font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.08em;color:var(--muted);padding-top:3px}
+  .facts dd{margin:0}
+  .witness{margin-top:24px;padding-top:18px;border-top:2px dashed var(--ink)}
+  .filed .item{background:#f4ebc9;border:1px solid var(--line);padding:10px 12px;margin-top:14px;word-wrap:break-word}
+  .filed .item .stamp{display:block;width:max-content;margin-top:8px;font-size:15px}
+  p{margin:0 0 10px}
+  .small{font-size:13px;color:var(--muted)}
+  @keyframes thud{0%{transform:scale(2.2) rotate(-12deg);opacity:0}60%{transform:scale(.96) rotate(-4deg);opacity:1}100%{transform:scale(1) rotate(-4deg)}}
+  .thud{animation:thud .35s ease-out both}
+  @media (prefers-reduced-motion:reduce){.thud{animation:none}}
+  .beat{opacity:0;transform:translateY(8px);transition:opacity .7s ease,transform .7s ease}
+  .beat.show{opacity:1;transform:none}
+  .redact{display:inline-block;background:var(--ink);color:transparent;padding:0 .3em;transition:background-color .9s ease,color .9s ease}
+  .redact.open{background:transparent;color:var(--red)}
+  .reveal-title{font-family:'Special Elite',serif;font-size:44px;line-height:1.05;text-transform:uppercase;margin:6px 0 4px}
+  .reveal-by{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+  .say{font-family:'Special Elite',serif;font-size:21px;line-height:1.3;margin:0 0 14px}
+  @media (prefers-reduced-motion:reduce){.beat,.redact{transition:none}}
+  iframe.jf{width:100%;border:1px solid var(--ink);background:#fff;display:block;margin:6px 0 10px}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="topbar" id="topbar" hidden>
+    <button type="button" class="backbtn" id="backbtn" aria-label="Go back">‹ Back</button>
+  </div>
+
+  <!-- SCREEN 0: the opening page -->
+  <section class="folder screen" id="s0" aria-labelledby="h0">
+    <span class="stamp big">Open file</span>
+    <h1 id="h0" tabindex="-1" style="padding-right:118px;font-size:30px">Bad Things<br>Case Files</h1>
+    <h2 style="margin:16px 0 0;font-size:19px">The Soda Videos -- Who is he??</h2>
+    <p style="margin:10px 0 0">Every video is a clue. Open the file:</p>
+    <div class="cases">
+      <button class="case open" type="button" data-go="1" aria-label="Open case 1, 1.7 million views">
+        <img src="still_imp.jpg" alt="">
+        <span class="who"><span class="cn">Case 1</span><br><span class="views">1.7M views</span><br><span class="q">DID HE MEAN TO DROP IT??</span><br><span class="state">Open</span></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- SCREEN 1: the file -->
+  <section class="folder screen" id="s1" aria-labelledby="h1">
+    <span class="stamp big">Unproven</span>
+    <div class="prog">The Soda Videos</div>
+    <h1 id="h1" tabindex="-1">Case 1</h1>
+    <dl class="facts">
+      <dt>Where</dt><dd>Washington Square Mall, Tigard, OR</dd>
+      <dt>When</dt><dd>2022</dd>
+      <dt>Why</dt><dd>the world may never know…</dd>
+    </dl>
+    <p style="margin:14px 0 12px">1.7 million people have watched his antics. Nobody knows who he is.</p>
+    <figure style="margin:0 0 18px">
+      <img src="official_views.jpg" alt="Official view count: 1.7M" style="width:100%;display:block;border:1px solid var(--ink)">
+    </figure>
+
+    <div class="meta"><span class="tag">Exhibit A</span>The footage</div>
+    <video id="vid" controls playsinline preload="metadata" poster="still_3.jpg" src="video.mp4"></video>
+    <p class="small" style="margin-top:8px">Tap a frame to jump to it.</p>
+    <div class="grid" id="frames"></div>
+
+    <div class="witness">
+      <div class="meta"><span class="tag">Exhibit B</span>The other camera</div>
+      <h2>Witness</h2>
+      <img src="exhibit_b2.jpg" alt="A frame from the footage with the second camera circled in red" style="width:100%;max-width:300px;display:block;border:1px solid var(--ink);margin:0 0 14px">
+      <p>Known as: <strong>“red phone girl”</strong><br><span class="small">(name given by comments)</span></p>
+      <p>A second camera was recording.</p>
+    </div>
+
+    <div class="witness" id="qbox">
+      <div class="meta"><span class="tag">The question is</span></div>
+      <h2 id="qh">DID HE MEAN TO DROP IT??</h2>
+      <iframe class="jf" id="jf1" src="https://form.jotform.com/263175264970059" title="Your answer" style="height:420px"></iframe>
+      <p class="small" id="hint1">File your answer to unlock the next file.</p>
+    </div>
+
+    <div class="nav" style="margin-top:8px">
+      <span></span>
+      <button class="primary" type="button" id="next1" data-go="2" disabled>Next</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: the box -->
+  <section class="folder screen" id="s2" aria-labelledby="h2b" hidden>
+    <div class="meta"><span class="tag">File</span>Submit evidence</div>
+    <h2 id="h2b" tabindex="-1">Who is he?</h2>
+    <iframe class="jf" id="jf2" data-src="https://form.jotform.com/263176017494057" title="Your evidence" style="height:560px"></iframe>
+    <div class="nav">
+      <button class="link" type="button" data-go="1">Back</button>
+      <button class="primary" type="button" id="skip">Continue</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: the reveal -->
+  <section class="folder screen" id="s3" aria-labelledby="h3" hidden>
+    <span class="stamp big" id="stmp" style="visibility:hidden">Statement</span>
+    <div class="meta"><span class="tag">On the record</span></div>
+    <h2 id="h3" tabindex="-1">Official statement</h2>
+    <p class="say beat" id="b1">He has given one statement.</p>
+    <div class="beat" id="b5">
+      <a class="btn" href="https://open.spotify.com/track/2lRgZWaLklyTZIdqftGKjN?si=iLvg2ZMjSsuj1FBunOLmTQ&amp;utm_source=copy-link" id="spotify">Listen to the statement</a>
+    </div>
+    <div class="nav">
+      <button class="link" type="button" data-go="2">Back</button>
+      <span></span>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  var vid=document.getElementById('vid');
+  var screens={0:document.getElementById('s0'),1:document.getElementById('s1'),2:document.getElementById('s2'),3:document.getElementById('s3')};
+  var heads={0:'h0',1:'h1',2:'h2b',3:'h3'};
+  var parentOf={1:0,2:1,3:2};
+  var current=0;
+  var topbar=document.getElementById('topbar');
+  var timers=[];
+  var reduce=false;
+  try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+  function resetReveal(){
+    clearTimers();
+    ['b1','b5'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+    document.getElementById('stmp').style.visibility='hidden';
+  }
+  function playReveal(){
+    resetReveal();
+    function at(ms,fn){ if(reduce){ fn(); } else { timers.push(setTimeout(fn,ms)); } }
+    at(500,function(){ document.getElementById('b1').classList.add('show'); });
+    at(1800,function(){
+      var st=document.getElementById('stmp'); st.style.visibility='visible'; st.classList.add('thud');
+      document.getElementById('b5').classList.add('show');
+    });
+  }
+
+  function go(n){
+    try{ vid.pause(); }catch(e){}
+    for(var k in screens){ screens[k].hidden=(String(k)!==String(n)); }
+    current=Number(n); topbar.hidden=(current===0);
+    window.scrollTo(0,0);
+    var h=document.getElementById(heads[n]); if(h){ h.focus({preventScroll:true}); }
+    if(current===2){ var j=document.getElementById('jf2'); if(!j.src){ j.src=j.getAttribute('data-src'); } }
+    if(current===3){ playReveal(); } else { resetReveal(); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'),function(b){
+    b.addEventListener('click',function(){ go(b.getAttribute('data-go')); });
+  });
+
+  var frames=[
+    {t:0.2,  label:"0:00", img:"still_0.jpg",   note:"He walks in holding a red cup."},
+    {t:1.07, label:"0:01", img:"still_imp.jpg", note:"The moment of impact."},
+    {t:3,    label:"0:03", img:"still_3.jpg",   note:"Arms up."},
+    {t:13,   label:"0:13", img:"still_13.jpg",  note:"He looks straight at the camera.", key:true}
+  ];
+  var box=document.getElementById('frames');
+  frames.forEach(function(f){
+    var b=document.createElement('button');
+    b.type='button'; b.className='card'+(f.key?' key':'');
+    b.setAttribute('aria-label','Jump to '+f.label+': '+f.note);
+    var img=document.createElement('img'); img.src=f.img; img.alt='Frame at '+f.label; img.loading='lazy';
+    var t=document.createElement('div'); t.className='t'; t.textContent=f.label+(f.key?'  KEY FRAME':'');
+    var n=document.createElement('div'); n.className='n'; n.textContent=f.note;
+    b.appendChild(img); b.appendChild(t); b.appendChild(n);
+    b.addEventListener('click',function(){
+      try{ vid.currentTime=f.t; var p=vid.play(); if(p&&p.catch)p.catch(function(){}); }catch(e){}
+      vid.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    box.appendChild(b);
+  });
+
+  var next1=document.getElementById('next1');
+  var hint1=document.getElementById('hint1');
+  next1.disabled=true;
+  function unlock(){ next1.disabled=false; hint1.textContent='Answer filed.'; }
+  /* The form frame loads once when it opens and again when the answer is submitted. */
+  var loads1=0;
+  document.getElementById('jf1').addEventListener('load',function(){ loads1++; if(loads1>=2){ unlock(); } });
+  window.addEventListener('message',function(e){
+    try{
+      if(!/jotform/.test(e.origin)) return;
+      var d=typeof e.data==='string'?e.data:JSON.stringify(e.data);
+      if(/submission-completed|thankyou|thank-you/i.test(d)){ unlock(); }
+    }catch(err){}
+  });
+  document.getElementById('skip').addEventListener('click',function(){ go(3); });
+
+  document.getElementById('backbtn').addEventListener('click',function(){ if(parentOf[current]!==undefined){ go(parentOf[current]); } });
+  go(0);
+})();
+</script>
+</body>
+</html>
